@@ -1,19 +1,17 @@
-"use client";
-
-import { useState } from "react";
-
 const buttonClass =
-  "size-12 rounded-full bg-white/15 text-2xl font-semibold transition enabled:hover:bg-white/25 enabled:active:scale-95 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
+  "size-16 rounded-full bg-white/15 text-3xl font-semibold transition enabled:hover:bg-white/25 enabled:active:scale-95 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
 
 export function ScoreCounter({
   team,
+  score,
+  onChange,
   className = "",
 }: {
   team: string;
+  score: number | null;
+  onChange?: (delta: 1 | -1) => void;
   className?: string;
 }) {
-  const [score, setScore] = useState(0);
-
   return (
     <section
       aria-label={team}
@@ -23,27 +21,30 @@ export function ScoreCounter({
         {team}
       </h2>
       <output className="text-7xl font-bold tabular-nums sm:text-8xl">
-        {score}
+        {score ?? "–"}
       </output>
-      <div className="flex gap-3">
-        <button
-          type="button"
-          className={buttonClass}
-          aria-label={`Retirer un point à ${team}`}
-          disabled={score === 0}
-          onClick={() => setScore((s) => Math.max(0, s - 1))}
-        >
-          −
-        </button>
-        <button
-          type="button"
-          className={buttonClass}
-          aria-label={`Ajouter un point à ${team}`}
-          onClick={() => setScore((s) => s + 1)}
-        >
-          +
-        </button>
-      </div>
+      {onChange && (
+        <div className="flex gap-3">
+          <button
+            type="button"
+            className={buttonClass}
+            aria-label={`Retirer un point à ${team}`}
+            disabled={!score}
+            onClick={() => onChange(-1)}
+          >
+            −
+          </button>
+          <button
+            type="button"
+            className={buttonClass}
+            aria-label={`Ajouter un point à ${team}`}
+            disabled={score === null}
+            onClick={() => onChange(1)}
+          >
+            +
+          </button>
+        </div>
+      )}
     </section>
   );
 }

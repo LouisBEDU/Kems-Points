@@ -1,7 +1,11 @@
 import type { NextConfig } from "next";
+import { lanAddress } from "./app/_lib/network.ts";
+
+const lan = lanAddress();
 
 const nextConfig: NextConfig = {
   poweredByHeader: false,
+  allowedDevOrigins: lan ? [lan] : [],
   headers() {
     return [
       {
