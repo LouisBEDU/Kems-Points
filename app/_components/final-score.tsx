@@ -98,10 +98,10 @@ export function FinalScore({
         <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
           {losers.map((team) => (
             <li key={team} className="flex items-center gap-3">
-              <span className="text-sm font-semibold uppercase tracking-widest text-white/70">
+              <span className="text-sm font-semibold uppercase tracking-widest text-white/70 [text-box:trim-both_cap_alphabetic]">
                 {teamNames[team]}
               </span>
-              <span className="text-3xl font-bold tabular-nums">
+              <span className="text-3xl font-bold tabular-nums [text-box:trim-both_cap_alphabetic]">
                 {scores[team]}
               </span>
             </li>

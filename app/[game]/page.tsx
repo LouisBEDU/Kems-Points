@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
+import { FullscreenButton } from "../_components/fullscreen-button.tsx";
 import { GameBoard } from "../_components/game-board.tsx";
 import { GameScene, SceneFallback } from "../_components/game-scene.tsx";
 import { getGameState } from "../_lib/games.ts";
@@ -18,6 +19,7 @@ async function GameScreen({ gameId }: { gameId: string }) {
   );
   return (
     <GameScene gameId={gameId}>
+      <FullscreenButton />
       <GameBoard name={game.name} qrUrl={`${origin}/${gameId}/gestion`} />
     </GameScene>
   );
