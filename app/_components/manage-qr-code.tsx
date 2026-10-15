@@ -4,7 +4,13 @@ import { useEffect, useRef } from "react";
 
 const QR_SIZE = 160;
 
-export function ManageQrCode({ url }: { url: string }) {
+export function ManageQrCode({
+  url,
+  caption,
+}: {
+  url: string;
+  caption: string;
+}) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -43,7 +49,7 @@ export function ManageQrCode({ url }: { url: string }) {
       className="flex flex-col items-center gap-3 rounded-3xl bg-white p-4 text-sm font-medium text-ink shadow-xl"
     >
       <div ref={containerRef} className="size-40" />
-      Scanne pour lancer la partie
+      {caption}
     </a>
   );
 }

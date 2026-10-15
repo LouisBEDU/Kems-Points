@@ -27,9 +27,10 @@ export function GameScene({
     <GameContext value={live}>
       <main>
         <WaveBackground
-          started={live.game?.started}
+          started={live.game?.phase === "playing"}
           revealing={live.revealing}
           onRevealEnd={live.endReveal}
+          takeover={live.claimView?.team ?? null}
         >
           {children}
         </WaveBackground>

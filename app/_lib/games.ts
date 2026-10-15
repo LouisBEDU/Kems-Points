@@ -1,10 +1,26 @@
 import { Buffer } from "node:buffer";
 import { randomBytes, randomInt, scrypt, timingSafeEqual } from "node:crypto";
+import {
+  type Claim,
+  CLAIM_KINDS,
+  type ClaimKind,
+  opponentOf,
+  PENALTY_POINTS,
+} from "./claims.ts";
 import { TEAMS } from "./config.ts";
+import { PLAYERS_PER_TEAM } from "./teams.ts";
 
-export type GameState = { name: string; started: boolean; scores: number[] };
+export type GamePhase = "waiting" | "setup" | "playing";
+export type GameState = {
+  name: string;
+  phase: GamePhase;
+  players: string[][];
+  scores: number[];
+  claim: Claim | null;
+};
 type Listener = (state: GameState) => void;
 type Game = GameState & {
+  claimCount: number;
   password: { salt: Buffer; hash: Promise<Buffer> } | null;
   sessions: Set<string>;
   listeners: Set<Listener>;
@@ -38,7 +54,7 @@ const GAME_TTL = 24 * 60 * 60 * 1000;
 const shared = globalThis as typeof globalThis & {
   kemsGames?: Map<string, Game>;
 };
-const games = (shared.kemsGames ??= new Map());
+const games: Map<string, Game> = (shared.kemsGames ??= new Map());
 
 const pick = <T>(items: readonly T[]) => items[randomInt(items.length)];
 
@@ -50,8 +66,14 @@ function hashPassword(password: string, salt: Buffer) {
   );
 }
 
-function snapshot({ name, started, scores }: Game): GameState {
-  return { name, started, scores: [...scores] };
+function snapshot({ name, phase, players, scores, claim }: Game): GameState {
+  return {
+    name,
+    phase,
+    players: players.map((team) => [...team]),
+    scores: [...scores],
+    claim: claim && { ...claim },
+  };
 }
 
 function notify(game: Game) {
@@ -81,8 +103,13 @@ export function createGame() {
 
   games.set(id, {
     name,
-    started: false,
+    phase: "waiting",
+    players: TEAMS.map(() =>
+      Array.from({ length: PLAYERS_PER_TEAM }, () => ""),
+    ),
     scores: TEAMS.map(() => 0),
+    claim: null,
+    claimCount: 0,
     password: null,
     sessions: new Set(),
     listeners: new Set(),
@@ -115,7 +142,7 @@ export async function openSession(id: string, password: string) {
   } else {
     const salt = randomBytes(16);
     game.password = { salt, hash: hashPassword(password, salt) };
-    game.started = true;
+    game.phase = "setup";
     notify(game);
     await game.password.hash;
   }
@@ -129,9 +156,52 @@ export function hasSession(id: string, token: string | undefined) {
   return token !== undefined && !!games.get(id)?.sessions.has(token);
 }
 
-export function updateScore(id: string, team: number, delta: number) {
+export function draftPlayerName(
+  id: string,
+  team: number,
+  slot: number,
+  name: string,
+) {
   const game = games.get(id);
-  if (!game?.started) return;
+  if (game?.phase !== "setup") return;
+  game.players[team][slot] = name;
+  notify(game);
+}
+
+export function launchGame(id: string, players: string[][]) {
+  const game = games.get(id);
+  if (game?.phase !== "setup") return;
+  game.players = players;
+  game.phase = "playing";
+  notify(game);
+}
+
+export function adjustScore(id: string, team: number, delta: number) {
+  const game = games.get(id);
+  if (game?.phase !== "playing") return;
   game.scores[team] = Math.max(0, game.scores[team] + delta);
+  notify(game);
+}
+
+export function declareClaim(id: string, team: number, kind: ClaimKind) {
+  const game = games.get(id);
+  if (game?.phase !== "playing" || game.claim?.status === "pending") return;
+  game.claimCount += 1;
+  game.claim = { id: game.claimCount, team, kind, status: "pending" };
+  notify(game);
+}
+
+export function resolveClaim(id: string, confirmed: boolean) {
+  const game = games.get(id);
+  const claim = game?.claim;
+  if (!game || claim?.status !== "pending") return;
+
+  const { points, penalty } = CLAIM_KINDS[claim.kind];
+  if (confirmed) {
+    game.scores[claim.team] += points;
+  } else if (penalty) {
+    game.scores[opponentOf(claim.team)] += PENALTY_POINTS;
+  }
+  claim.status = confirmed ? "confirmed" : "rejected";
   notify(game);
 }

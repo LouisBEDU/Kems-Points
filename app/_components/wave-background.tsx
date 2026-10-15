@@ -1,10 +1,12 @@
 "use client";
 
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useCallback, useEffect, useRef } from "react";
 import { animate, createTimer, type JSAnimation, utils } from "animejs";
+import { prefersReducedMotion } from "../_lib/motion.ts";
 
 type Point = { x: number; y: number };
 type WaveState = { amplitude: number; phase: number };
+type Wave = { states: WaveState[]; shift: number };
 
 const WAVES = [
   { frequency: 0.7, amplitude: [2, 5] },
@@ -12,6 +14,8 @@ const WAVES = [
 ] as const;
 const SAMPLES = 40;
 const REVEAL_DURATION = 2000;
+const TAKEOVER_DURATION = 700;
+const TAKEOVER_SHIFT = 60;
 const BLOB_POINTS = 48;
 const BLOB_WOBBLES = [
   { lobes: 3, amplitude: 0.09, speed: 2.2, phase: 0 },
@@ -30,7 +34,7 @@ const INITIAL_STATES: WaveState[] = WAVES.map(
   }),
 );
 
-function wavePoints(states: WaveState[]): Point[] {
+function wavePoints({ states, shift }: Wave): Point[] {
   return Array.from({ length: SAMPLES + 1 }, (_, i) => {
     const y = -5 + (110 * i) / SAMPLES;
     const offset = WAVES.reduce(
@@ -40,9 +44,14 @@ function wavePoints(states: WaveState[]): Point[] {
           Math.sin(2 * Math.PI * frequency * (y / 100) + states[w].phase),
       0,
     );
-    return { x: 50 + offset, y };
+    return { x: 50 + shift + offset, y };
   });
 }
+
+const createWave = (): Wave => ({
+  states: INITIAL_STATES.map((state) => ({ ...state })),
+  shift: 0,
+});
 
 const fmt = (n: number) => n.toFixed(2);
 
@@ -68,7 +77,7 @@ function wavePath(points: Point[]) {
   return `M0 ${fmt(first.y)}L${fmt(first.x)} ${fmt(first.y)}${curves.join("")}L0 ${fmt(last.y)}Z`;
 }
 
-const INITIAL_PATH = wavePath(wavePoints(INITIAL_STATES));
+const INITIAL_PATH = wavePath(wavePoints(createWave()));
 
 function blobPath(center: Point, radius: number, time: number) {
   const points = Array.from({ length: BLOB_POINTS }, (_, i) => {
@@ -91,29 +100,35 @@ function blobPath(center: Point, radius: number, time: number) {
   return `M${fmt(points[0].x)} ${fmt(points[0].y)}${curves.join("")}Z`;
 }
 
-const prefersReducedMotion = () =>
-  globalThis.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
 export function WaveBackground({
   started = false,
   revealing = false,
   onRevealEnd,
+  takeover = null,
   children,
 }: {
   started?: boolean;
   revealing?: boolean;
   onRevealEnd?: () => void;
+  takeover?: number | null;
   children?: ReactNode;
 }) {
+  const waveRef = useRef<Wave>(createWave());
   const inkPathRef = useRef<SVGPathElement>(null);
   const teamPathRef = useRef<SVGPathElement>(null);
   const revealRef = useRef<SVGSVGElement>(null);
   const blobRef = useRef<SVGPathElement>(null);
 
+  const drawWave = useCallback(() => {
+    const d = wavePath(wavePoints(waveRef.current));
+    inkPathRef.current?.setAttribute("d", d);
+    teamPathRef.current?.setAttribute("d", d);
+  }, []);
+
   useEffect(() => {
     if (prefersReducedMotion()) return;
 
-    const states = INITIAL_STATES.map((state) => ({ ...state }));
+    const { states } = waveRef.current;
     const animations: JSAnimation[] = [];
 
     const morph = (w: number) => {
@@ -128,19 +143,28 @@ export function WaveBackground({
     };
     states.forEach((_, w) => morph(w));
 
-    const renderer = createTimer({
-      onUpdate: () => {
-        const d = wavePath(wavePoints(states));
-        inkPathRef.current?.setAttribute("d", d);
-        teamPathRef.current?.setAttribute("d", d);
-      },
-    });
+    const renderer = createTimer({ onUpdate: drawWave });
 
     return () => {
       renderer.cancel();
       animations.forEach((animation) => animation.cancel());
     };
-  }, []);
+  }, [drawWave]);
+
+  useEffect(() => {
+    const shift =
+      takeover === null ? 0 : takeover === 0 ? TAKEOVER_SHIFT : -TAKEOVER_SHIFT;
+    const animation = animate(waveRef.current, {
+      shift,
+      duration: prefersReducedMotion() ? 0 : TAKEOVER_DURATION,
+      ease: "inOutCubic",
+      onUpdate: drawWave,
+    });
+
+    return () => {
+      animation.cancel();
+    };
+  }, [takeover, drawWave]);
 
   useEffect(() => {
     const reveal = revealRef.current;

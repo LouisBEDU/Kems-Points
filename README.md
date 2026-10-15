@@ -1,4 +1,4 @@
-# Kems Points
+# Kem's Points
 
 Application Next.js exécutée avec [Deno](https://deno.com).
 

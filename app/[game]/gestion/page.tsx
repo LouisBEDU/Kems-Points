@@ -21,7 +21,7 @@ async function Manage({ gameId }: { gameId: string }) {
       {hasSession(gameId, token) ? (
         <GameBoard name={game.name} editable />
       ) : (
-        <PasswordGate name={game.name} started={game.started} />
+        <PasswordGate name={game.name} phase={game.phase} />
       )}
     </GameScene>
   );
