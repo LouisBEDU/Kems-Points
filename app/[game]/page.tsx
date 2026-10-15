@@ -1,5 +1,5 @@
 import { headers } from "next/headers";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { Suspense } from "react";
 import { GameBoard } from "../_components/game-board.tsx";
 import { GameScene, SceneFallback } from "../_components/game-scene.tsx";
@@ -10,6 +10,7 @@ async function GameScreen({ gameId }: { gameId: string }) {
   const requestHeaders = await headers();
   const game = getGameState(gameId);
   if (!game) notFound();
+  if (game.phase === "finished") redirect("/");
 
   const origin = publicOrigin(
     requestHeaders.get("host") ?? "localhost:3000",

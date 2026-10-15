@@ -6,6 +6,7 @@ import {
   adjustScore,
   declareClaim,
   draftPlayerName,
+  finishGame,
   getGameState,
   hasSession,
   launchGame,
@@ -123,4 +124,9 @@ export async function resolveKems(gameId: string, confirmed: boolean) {
     throw new Error("Réponse invalide");
   }
   resolveClaim(gameId, confirmed);
+}
+
+export async function endGame(gameId: string) {
+  await assertSession(gameId);
+  finishGame(gameId);
 }

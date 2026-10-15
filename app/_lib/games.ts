@@ -10,7 +10,7 @@ import {
 import { TEAMS } from "./config.ts";
 import { PLAYERS_PER_TEAM } from "./teams.ts";
 
-export type GamePhase = "waiting" | "setup" | "playing";
+export type GamePhase = "waiting" | "setup" | "playing" | "finished";
 export type GameState = {
   name: string;
   phase: GamePhase;
@@ -49,7 +49,7 @@ const TRAITS = [
   "Sage",
   "Farceur",
 ];
-const GAME_TTL = 24 * 60 * 60 * 1000;
+const GAME_TTL = 6 * 60 * 60 * 1000;
 
 const shared = globalThis as typeof globalThis & {
   kemsGames?: Map<string, Game>;
@@ -203,5 +203,12 @@ export function resolveClaim(id: string, confirmed: boolean) {
     game.scores[opponentOf(claim.team)] += PENALTY_POINTS;
   }
   claim.status = confirmed ? "confirmed" : "rejected";
+  notify(game);
+}
+
+export function finishGame(id: string) {
+  const game = games.get(id);
+  if (game?.phase !== "playing" || game.claim?.status === "pending") return;
+  game.phase = "finished";
   notify(game);
 }

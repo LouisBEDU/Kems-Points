@@ -4,6 +4,8 @@ import { correctScore, declareKems, resolveKems } from "../_lib/actions.ts";
 import { APP_NAME, TEAMS } from "../_lib/config.ts";
 import { teamNames } from "../_lib/teams.ts";
 import { ClaimStage } from "./claim-stage.tsx";
+import { EndGameButton } from "./end-game-button.tsx";
+import { FinalScore } from "./final-score.tsx";
 import { useGame } from "./game-scene.tsx";
 import { ManageQrCode } from "./manage-qr-code.tsx";
 import { PlayerNames } from "./player-names.tsx";
@@ -42,6 +44,10 @@ export function GameBoard({
     );
   }
 
+  if (game?.phase === "finished") {
+    return <FinalScore scores={game.scores} teamNames={names} />;
+  }
+
   const phase = game?.phase;
   const preparing = phase === "waiting" || phase === "setup";
   const playing = phase === "playing" && !revealing;
@@ -62,6 +68,7 @@ export function GameBoard({
           <p className="mt-2 text-white/80">{name}</p>
         </div>
         {editable && phase === "setup" && <TeamSetup />}
+        {editable && playing && <EndGameButton gameId={gameId} />}
         {!editable && qrUrl && preparing && (
           <ManageQrCode
             url={qrUrl}

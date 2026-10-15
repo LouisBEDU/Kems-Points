@@ -11,3 +11,8 @@ export function teamNames(players: readonly (readonly string[])[]) {
     return names.length > 0 ? names.join(" & ") : fallback;
   });
 }
+
+export function winnersOf(scores: readonly number[]) {
+  const best = Math.max(...scores);
+  return scores.flatMap((score, team) => (score === best ? [team] : []));
+}
