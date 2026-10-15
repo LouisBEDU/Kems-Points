@@ -3,4 +3,15 @@
 @theme {
   --color-team-1: #1e3a8a;
   --color-team-2: #e11d48;
+  --color-ink: #15171c;
+  --color-paper: #f2efe8;
+
+  --animate-fade-in: fade-in 600ms ease-out both;
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+  }
 }
