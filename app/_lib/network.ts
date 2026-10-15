@@ -5,6 +5,7 @@ const VIRTUAL_INTERFACE =
 const LOCAL_HOSTNAMES = new Set(["localhost", "127.0.0.1", "[::1]"]);
 
 export function lanAddress() {
+  if (process.env.LAN_ADDRESS) return process.env.LAN_ADDRESS;
   const addresses = Object.entries(networkInterfaces())
     .filter(([name]) => !VIRTUAL_INTERFACE.test(name))
     .flatMap(([, list]) => list ?? [])

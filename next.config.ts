@@ -4,6 +4,7 @@ import { lanAddress } from "./app/_lib/network.ts";
 const lan = lanAddress();
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   poweredByHeader: false,
   allowedDevOrigins: lan ? [lan] : [],
   headers() {
