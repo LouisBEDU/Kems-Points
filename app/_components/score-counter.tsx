@@ -1,4 +1,5 @@
 import { CLAIM_KINDS, CLAIM_ORDER, type ClaimKind } from "../_lib/claims.ts";
+import { LeaderCrown } from "./leader-crown.tsx";
 
 const claimButtonClass =
   "flex items-center justify-between gap-2 rounded-2xl bg-white/15 px-3 py-3 text-sm font-semibold transition enabled:hover:bg-white/25 enabled:active:scale-95 disabled:opacity-40 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white";
@@ -8,26 +9,31 @@ const adjustButtonClass =
 export function ScoreCounter({
   team,
   score,
+  leading = false,
   onClaim,
   onAdjust,
   className = "",
 }: {
   team: string;
   score: number | null;
+  leading?: boolean;
   onClaim?: (kind: ClaimKind) => void;
   onAdjust?: (delta: 1 | -1) => void;
   className?: string;
 }) {
+  const digits = score === null ? "–" : String(score);
+
   return (
     <section
       aria-label={team}
-      className={`flex flex-col items-center gap-4 ${className}`}
+      className={`@container flex flex-col items-center gap-4 ${className}`}
     >
       <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-white/80">
         {team}
       </h2>
-      <output className="text-7xl font-bold tabular-nums sm:text-8xl">
-        {score ?? "–"}
+      <output className="relative mt-[0.3em] text-[clamp(4.5rem,55cqw,16rem)] font-bold leading-none tabular-nums [text-box:trim-both_cap_alphabetic]">
+        {digits}
+        {leading && score !== null && <LeaderCrown digit={digits.slice(-1)} />}
       </output>
       {onAdjust && (
         <div

@@ -5,13 +5,23 @@
   --color-team-2: #e11d48;
   --color-ink: #15171c;
   --color-paper: #f2efe8;
+  --color-gold: #f8c630;
+  --color-gold-dark: #d99a06;
 
   --animate-fade-in: fade-in 600ms ease-out both;
+  --animate-crown-drop: crown-drop 700ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
 
   @keyframes fade-in {
     from {
       opacity: 0;
       transform: translateY(12px);
+    }
+  }
+
+  @keyframes crown-drop {
+    from {
+      opacity: 0;
+      transform: translateY(-120%) rotate(-30deg) scale(0.5);
     }
   }
 }

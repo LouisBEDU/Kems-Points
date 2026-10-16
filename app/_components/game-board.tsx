@@ -2,7 +2,7 @@
 
 import { correctScore, declareKems, resolveKems } from "../_lib/actions.ts";
 import { APP_NAME, TEAMS } from "../_lib/config.ts";
-import { teamNames } from "../_lib/teams.ts";
+import { teamNames, winnersOf } from "../_lib/teams.ts";
 import { useGuardedAction } from "../_lib/use-guarded-action.ts";
 import { ActionError } from "./action-error.tsx";
 import { ClaimStage } from "./claim-stage.tsx";
@@ -55,6 +55,8 @@ export function GameBoard({
   const preparing = phase === "waiting" || phase === "setup";
   const playing = phase === "playing" && !revealing;
   const contrast = phase === "playing" ? "" : "mix-blend-difference";
+  const leaders = game ? winnersOf(game.scores) : [];
+  const leader = leaders.length === 1 ? leaders[0] : null;
 
   return (
     <div
@@ -98,6 +100,7 @@ export function GameBoard({
             key={fallback}
             team={names[i]}
             score={game.scores[i]}
+            leading={leader === i}
             onClaim={
               editable
                 ? (kind) => scoring.run(() => declareKems(gameId, i, kind))
