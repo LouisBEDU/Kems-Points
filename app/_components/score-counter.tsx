@@ -28,10 +28,10 @@ export function ScoreCounter({
       aria-label={team}
       className={`@container flex flex-col items-center gap-4 ${className}`}
     >
-      <h2 className="text-center text-sm font-semibold uppercase tracking-widest text-white/80">
+      <h2 className="text-center text-sm font-semibold uppercase tracking-widest opacity-80">
         {team}
       </h2>
-      <output className="relative mt-[0.3em] text-[clamp(4.5rem,55cqw,16rem)] font-bold leading-none tabular-nums [text-box:trim-both_cap_alphabetic]">
+      <output className="pointer-events-none relative mt-[0.3em] text-[clamp(4.5rem,55cqw,16rem)] font-bold leading-none tabular-nums [text-box:trim-both_cap_alphabetic]">
         {digits}
         {leading && score !== null && <LeaderCrown digit={digits.slice(-1)} />}
       </output>
@@ -73,7 +73,7 @@ export function ScoreCounter({
               onClick={() => onClaim(kind)}
             >
               <span>{CLAIM_KINDS[kind].label}</span>
-              <span className="text-white/70">+{CLAIM_KINDS[kind].points}</span>
+              <span className="opacity-70">+{CLAIM_KINDS[kind].points}</span>
             </button>
           ))}
         </div>

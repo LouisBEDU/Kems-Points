@@ -3,7 +3,7 @@
 import { animate, stagger } from "animejs";
 import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "../_lib/motion.ts";
-import { winnersOf } from "../_lib/teams.ts";
+import { TEAM_ON, winnersOf } from "../_lib/teams.ts";
 
 const HOP = [
   { to: "-28%", duration: 320, ease: "outQuad" },
@@ -69,9 +69,11 @@ export function FinalScore({
   const tie = winners.length > 1;
 
   return (
-    <div className="flex min-h-dvh animate-fade-in flex-col items-center justify-center gap-10 px-4 py-10 text-center text-white">
+    <div
+      className={`flex min-h-dvh animate-fade-in flex-col items-center justify-center gap-10 px-4 py-10 text-center ${tie ? "text-white" : TEAM_ON[winners[0]]}`}
+    >
       <div>
-        <p className="text-sm font-semibold uppercase tracking-widest text-white/80">
+        <p className="text-sm font-semibold uppercase tracking-widest opacity-80">
           {tie ? "Fin de partie" : teamNames[winners[0]]}
         </p>
         <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-6xl">
@@ -86,7 +88,7 @@ export function FinalScore({
             className="flex flex-col items-center"
           >
             {tie && (
-              <h2 className="text-sm font-semibold uppercase tracking-widest text-white/80">
+              <h2 className="text-sm font-semibold uppercase tracking-widest opacity-80">
                 {teamNames[team]}
               </h2>
             )}
@@ -98,7 +100,7 @@ export function FinalScore({
         <ul className="flex flex-wrap justify-center gap-x-8 gap-y-2">
           {losers.map((team) => (
             <li key={team} className="flex items-center gap-3">
-              <span className="text-sm font-semibold uppercase tracking-widest text-white/70 [text-box:trim-both_cap_alphabetic]">
+              <span className="text-sm font-semibold uppercase tracking-widest opacity-70 [text-box:trim-both_cap_alphabetic]">
                 {teamNames[team]}
               </span>
               <span className="text-3xl font-bold tabular-nums [text-box:trim-both_cap_alphabetic]">

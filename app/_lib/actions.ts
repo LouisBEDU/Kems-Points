@@ -1,7 +1,7 @@
 "use server";
 
 import { isClaimKind } from "./claims.ts";
-import { TEAMS } from "./config.ts";
+import { MAX_TEAMS, MIN_TEAMS } from "./config.ts";
 import {
   adjustScore,
   declareClaim,
@@ -12,6 +12,8 @@ import {
   launchGame,
   openSession,
   resolveClaim,
+  setTeamCount,
+  teamCount,
 } from "./games.ts";
 import { saveSession, sessionToken } from "./session.ts";
 import { MAX_PLAYER_NAME_LENGTH, PLAYERS_PER_TEAM } from "./teams.ts";
@@ -25,8 +27,8 @@ async function assertSession(gameId: string) {
   }
 }
 
-function assertTeam(team: number) {
-  if (!Number.isInteger(team) || team < 0 || team >= TEAMS.length) {
+function assertTeam(gameId: string, team: number) {
+  if (!Number.isInteger(team) || team < 0 || team >= teamCount(gameId)) {
     throw new Error("Équipe inconnue");
   }
 }
@@ -62,7 +64,7 @@ export async function startGame(
   formData: FormData,
 ): Promise<string | null> {
   await assertSession(gameId);
-  const players = TEAMS.map((_, team) =>
+  const players = Array.from({ length: teamCount(gameId) }, (_, team) =>
     Array.from({ length: PLAYERS_PER_TEAM }, (_, slot) => {
       const value = formData.get(`player-${team}-${slot}`);
       return typeof value === "string" ? value.trim() : "";
@@ -79,6 +81,14 @@ export async function startGame(
   return null;
 }
 
+export async function changeTeamCount(gameId: string, count: number) {
+  await assertSession(gameId);
+  if (!Number.isInteger(count) || count < MIN_TEAMS || count > MAX_TEAMS) {
+    throw new Error("Nombre d'équipes invalide");
+  }
+  setTeamCount(gameId, count);
+}
+
 export async function draftPlayer(
   gameId: string,
   team: number,
@@ -86,7 +96,7 @@ export async function draftPlayer(
   name: string,
 ) {
   await assertSession(gameId);
-  assertTeam(team);
+  assertTeam(gameId, team);
   if (!Number.isInteger(slot) || slot < 0 || slot >= PLAYERS_PER_TEAM) {
     throw new Error("Joueur inconnu");
   }
@@ -102,7 +112,7 @@ export async function correctScore(
   delta: number,
 ) {
   await assertSession(gameId);
-  assertTeam(team);
+  assertTeam(gameId, team);
   if (delta !== 1 && delta !== -1) {
     throw new Error("Correction invalide");
   }
@@ -111,7 +121,7 @@ export async function correctScore(
 
 export async function declareKems(gameId: string, team: number, kind: string) {
   await assertSession(gameId);
-  assertTeam(team);
+  assertTeam(gameId, team);
   if (!isClaimKind(kind)) {
     throw new Error("Type de Kem's inconnu");
   }

@@ -44,8 +44,8 @@ export function useLiveGame(gameId: string): LiveGame {
           revealing:
             previous.revealing ||
             (previous.game !== null &&
-              previous.game.phase !== "playing" &&
-              game.phase === "playing"),
+              previous.game.phase === "waiting" &&
+              game.phase !== "waiting"),
           claimView: followsClaim ? claim : previous.claimView,
         };
       });

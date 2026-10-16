@@ -2,17 +2,12 @@
 
 import { animate, createTimeline, type JSAnimation, utils } from "animejs";
 import { useEffect, useRef, useState } from "react";
-import {
-  type Claim,
-  CLAIM_KINDS,
-  opponentOf,
-  PENALTY_POINTS,
-} from "../_lib/claims.ts";
+import { type Claim, CLAIM_KINDS, PENALTY_POINTS } from "../_lib/claims.ts";
 import { prefersReducedMotion } from "../_lib/motion.ts";
+import { TEAM_ON, TEAM_TEXT } from "../_lib/teams.ts";
 import { useGuardedAction } from "../_lib/use-guarded-action.ts";
 import { ActionError } from "./action-error.tsx";
 
-const BADGE_COLORS = ["text-team-1", "text-team-2"];
 const SETTLE = { x: 0, y: 0, rotate: 0, duration: 150, ease: "outQuad" };
 
 export function ClaimStage({
@@ -38,13 +33,15 @@ export function ClaimStage({
   const shown =
     claim.status === "confirmed" && !landed ? score - points : score;
   const team = teamNames[claim.team];
-  const opponent = teamNames[opponentOf(claim.team)];
+  const opponents = teamNames.filter((_, other) => other !== claim.team);
+  const duel = opponents.length === 1;
+  const beneficiary = duel ? opponents[0] : "chaque autre équipe";
   const outcome =
     claim.status === "confirmed"
       ? `+${points} pour ${team}`
       : claim.status === "rejected"
         ? penalty
-          ? `Refusé · +${PENALTY_POINTS} pour ${opponent}`
+          ? `Refusé · +${PENALTY_POINTS} pour ${beneficiary}`
           : "Refusé"
         : null;
 
@@ -112,7 +109,7 @@ export function ClaimStage({
         .add(
           badge,
           {
-            x: penalty ? direction * 260 : 0,
+            x: penalty && duel ? direction * 260 : 0,
             y: -320,
             rotate: direction * 35,
             opacity: 0,
@@ -127,12 +124,14 @@ export function ClaimStage({
     return () => {
       timeline.cancel();
     };
-  }, [claim.status, claim.team, penalty, onDone]);
+  }, [claim.status, claim.team, penalty, duel, onDone]);
 
   return (
-    <div className="flex min-h-dvh animate-fade-in flex-col items-center justify-center gap-8 px-4 py-10 text-center text-white [animation-delay:300ms]">
+    <div
+      className={`flex min-h-dvh animate-fade-in flex-col items-center justify-center gap-8 px-4 py-10 text-center ${TEAM_ON[claim.team]} [animation-delay:300ms]`}
+    >
       <div>
-        <p className="text-sm font-semibold uppercase tracking-widest text-white/80">
+        <p className="text-sm font-semibold uppercase tracking-widest opacity-80">
           {team}
         </p>
         <h1 className="mt-2 text-4xl font-black tracking-tight sm:text-6xl">
@@ -142,7 +141,7 @@ export function ClaimStage({
       <div className="relative px-12 pt-6">
         <span
           ref={badgeRef}
-          className={`absolute left-0 top-0 rounded-full bg-white px-3 py-1 text-2xl font-black shadow-lg ${BADGE_COLORS[claim.team]}`}
+          className={`absolute left-0 top-0 rounded-full bg-white px-3 py-1 text-2xl font-black shadow-lg ${TEAM_TEXT[claim.team]}`}
         >
           +{points}
         </span>
@@ -178,7 +177,7 @@ export function ClaimStage({
       )}
       <ActionError message={error} />
       {pending && !onResolve && (
-        <p className="animate-pulse text-white/80">En attente de validation…</p>
+        <p className="animate-pulse opacity-80">En attente de validation…</p>
       )}
     </div>
   );

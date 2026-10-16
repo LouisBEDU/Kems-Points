@@ -4,10 +4,9 @@ import {
   type Claim,
   CLAIM_KINDS,
   type ClaimKind,
-  opponentOf,
   PENALTY_POINTS,
 } from "./claims.ts";
-import { TEAMS } from "./config.ts";
+import { MIN_TEAMS } from "./config.ts";
 import { PLAYERS_PER_TEAM } from "./teams.ts";
 
 export type GamePhase = "waiting" | "setup" | "playing" | "finished";
@@ -57,6 +56,7 @@ const shared = globalThis as typeof globalThis & {
 const games: Map<string, Game> = (shared.kemsGames ??= new Map());
 
 const pick = <T>(items: readonly T[]) => items[randomInt(items.length)];
+const emptyTeam = () => Array.from({ length: PLAYERS_PER_TEAM }, () => "");
 
 function hashPassword(password: string, salt: Buffer) {
   return new Promise<Buffer>((resolve, reject) =>
@@ -104,10 +104,8 @@ export function createGame() {
   games.set(id, {
     name,
     phase: "waiting",
-    players: TEAMS.map(() =>
-      Array.from({ length: PLAYERS_PER_TEAM }, () => ""),
-    ),
-    scores: TEAMS.map(() => 0),
+    players: Array.from({ length: MIN_TEAMS }, emptyTeam),
+    scores: Array.from({ length: MIN_TEAMS }, () => 0),
     claim: null,
     claimCount: 0,
     password: null,
@@ -156,6 +154,21 @@ export function hasSession(id: string, token: string | undefined) {
   return token !== undefined && !!games.get(id)?.sessions.has(token);
 }
 
+export function teamCount(id: string) {
+  return games.get(id)?.players.length ?? 0;
+}
+
+export function setTeamCount(id: string, count: number) {
+  const game = games.get(id);
+  if (game?.phase !== "setup" || game.players.length === count) return;
+  game.players = Array.from(
+    { length: count },
+    (_, team) => game.players[team] ?? emptyTeam(),
+  );
+  game.scores = Array.from({ length: count }, () => 0);
+  notify(game);
+}
+
 export function draftPlayerName(
   id: string,
   team: number,
@@ -200,7 +213,9 @@ export function resolveClaim(id: string, confirmed: boolean) {
   if (confirmed) {
     game.scores[claim.team] += points;
   } else if (penalty) {
-    game.scores[opponentOf(claim.team)] += PENALTY_POINTS;
+    game.scores = game.scores.map((score, team) =>
+      team === claim.team ? score : score + PENALTY_POINTS,
+    );
   }
   claim.status = confirmed ? "confirmed" : "rejected";
   notify(game);

@@ -1,12 +1,16 @@
 "use client";
 
 import { useActionState, useEffect, useRef } from "react";
-import { draftPlayer, startGame } from "../_lib/actions.ts";
-import { TEAMS } from "../_lib/config.ts";
-import { MAX_PLAYER_NAME_LENGTH, PLAYERS_PER_TEAM } from "../_lib/teams.ts";
+import { changeTeamCount, draftPlayer, startGame } from "../_lib/actions.ts";
+import { MAX_TEAMS, MIN_TEAMS, TEAMS } from "../_lib/config.ts";
+import {
+  MAX_PLAYER_NAME_LENGTH,
+  PLAYERS_PER_TEAM,
+  TEAM_TEXT,
+} from "../_lib/teams.ts";
+import { useGuardedAction } from "../_lib/use-guarded-action.ts";
 import { useGame } from "./game-scene.tsx";
 
-const TEAM_COLORS = ["text-team-1", "text-team-2"];
 const DRAFT_DELAY = 120;
 
 export function TeamSetup() {
@@ -15,7 +19,10 @@ export function TeamSetup() {
     startGame.bind(null, gameId),
     null,
   );
+  const resizing = useGuardedAction();
   const draftTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>());
+  const teams = game?.players.length ?? MIN_TEAMS;
+  const message = error ?? resizing.error;
 
   useEffect(() => {
     const timers = draftTimers.current;
@@ -31,24 +38,37 @@ export function TeamSetup() {
     );
   };
 
+  const resize = (count: number) =>
+    resizing.run(() => changeTeamCount(gameId, count));
+
   return (
     <form
       action={formAction}
       className="w-full max-w-sm rounded-3xl bg-white p-6 text-left text-ink shadow-xl"
     >
       <h2 className="text-2xl font-bold">Composer les équipes</h2>
-      {TEAMS.map((team, i) => (
-        <fieldset key={team} className="mt-6">
+      {Array.from({ length: teams }, (_, i) => (
+        <fieldset key={i} className="mt-6">
           <legend
-            className={`text-sm font-semibold uppercase tracking-widest ${TEAM_COLORS[i]}`}
+            className={`flex w-full items-center justify-between text-sm font-semibold uppercase tracking-widest ${TEAM_TEXT[i]}`}
           >
-            {team}
+            {TEAMS[i]}
+            {i === teams - 1 && teams > MIN_TEAMS && (
+              <button
+                type="button"
+                disabled={resizing.pending}
+                onClick={() => resize(teams - 1)}
+                className="rounded-full px-2 py-1 text-xs font-medium normal-case tracking-normal text-ink/50 transition enabled:hover:bg-ink/5 enabled:hover:text-ink disabled:opacity-60"
+              >
+                Retirer
+              </button>
+            )}
           </legend>
           {Array.from({ length: PLAYERS_PER_TEAM }, (_, slot) => (
             <input
               key={slot}
               name={`player-${i}-${slot}`}
-              aria-label={`${team}, joueur ${slot + 1}`}
+              aria-label={`${TEAMS[i]}, joueur ${slot + 1}`}
               placeholder={`Joueur ${slot + 1}`}
               defaultValue={game?.players[i]?.[slot] ?? ""}
               required
@@ -60,9 +80,19 @@ export function TeamSetup() {
           ))}
         </fieldset>
       ))}
-      {error && (
+      {teams < MAX_TEAMS && (
+        <button
+          type="button"
+          disabled={resizing.pending}
+          onClick={() => resize(teams + 1)}
+          className="mt-6 w-full rounded-xl border-2 border-dashed border-ink/20 py-3 text-sm font-semibold text-ink/60 transition enabled:hover:border-ink/40 enabled:hover:text-ink disabled:opacity-60"
+        >
+          + Ajouter une équipe
+        </button>
+      )}
+      {message && (
         <p role="alert" className="mt-3 text-sm text-team-2">
-          {error}
+          {message}
         </p>
       )}
       <button

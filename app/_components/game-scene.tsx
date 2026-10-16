@@ -23,14 +23,16 @@ export function GameScene({
   children: ReactNode;
 }) {
   const live = useLiveGame(gameId);
-  const finished = live.game?.phase === "finished";
+  const phase = live.game?.phase;
+  const finished = phase === "finished";
   const winners = live.game && finished ? winnersOf(live.game.scores) : [];
 
   return (
     <GameContext value={live}>
       <main>
         <WaveBackground
-          started={live.game?.phase === "playing" || finished}
+          started={phase !== undefined && phase !== "waiting"}
+          teams={live.game?.players.length}
           revealing={live.revealing}
           onRevealEnd={live.endReveal}
           takeover={

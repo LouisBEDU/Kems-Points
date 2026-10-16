@@ -27,7 +27,9 @@ export function LeaderCrown({ digit }: { digit: string }) {
     >
       <svg
         viewBox="0 0 40 30"
-        className="block w-full origin-bottom drop-shadow-[0_0.02em_0.03em_rgb(0_0_0/0.35)] motion-safe:animate-crown-drop"
+        strokeWidth={1.6}
+        strokeLinejoin="round"
+        className="block w-full origin-bottom overflow-visible stroke-ink/45 drop-shadow-[0_0.02em_0.03em_rgb(0_0_0/0.35)] [paint-order:stroke] motion-safe:animate-crown-drop"
       >
         <path className="fill-gold" d="M6 25 4 10l9 7 7-12 7 12 9-7-2 15Z" />
         <rect
