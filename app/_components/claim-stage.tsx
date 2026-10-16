@@ -1,7 +1,7 @@
 "use client";
 
 import { animate, createTimeline, type JSAnimation, utils } from "animejs";
-import { useEffect, useRef, useState, useTransition } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   type Claim,
   CLAIM_KINDS,
@@ -9,6 +9,8 @@ import {
   PENALTY_POINTS,
 } from "../_lib/claims.ts";
 import { prefersReducedMotion } from "../_lib/motion.ts";
+import { useGuardedAction } from "../_lib/use-guarded-action.ts";
+import { ActionError } from "./action-error.tsx";
 
 const BADGE_COLORS = ["text-team-1", "text-team-2"];
 const SETTLE = { x: 0, y: 0, rotate: 0, duration: 150, ease: "outQuad" };
@@ -30,7 +32,7 @@ export function ClaimStage({
   const badgeRef = useRef<HTMLSpanElement>(null);
   const numberRef = useRef<HTMLSpanElement>(null);
   const [landed, setLanded] = useState(false);
-  const [sending, startSending] = useTransition();
+  const { pending: sending, error, run } = useGuardedAction();
 
   const pending = claim.status === "pending";
   const shown =
@@ -159,7 +161,7 @@ export function ClaimStage({
           <button
             type="button"
             disabled={sending}
-            onClick={() => startSending(() => onResolve(true))}
+            onClick={() => run(() => onResolve(true))}
             className="rounded-2xl bg-white px-8 py-4 text-lg font-bold text-ink transition enabled:active:scale-95 disabled:opacity-60"
           >
             Valider
@@ -167,13 +169,14 @@ export function ClaimStage({
           <button
             type="button"
             disabled={sending}
-            onClick={() => startSending(() => onResolve(false))}
+            onClick={() => run(() => onResolve(false))}
             className="rounded-2xl bg-white/15 px-8 py-4 text-lg font-bold transition enabled:active:scale-95 disabled:opacity-60"
           >
             Refuser
           </button>
         </div>
       )}
+      <ActionError message={error} />
       {pending && !onResolve && (
         <p className="animate-pulse text-white/80">En attente de validation…</p>
       )}

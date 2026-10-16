@@ -4,6 +4,7 @@ services:
     restart: unless-stopped
     environment:
       LAN_ADDRESS: ${LAN_ADDRESS:-}
+      KEEP_ALIVE_TIMEOUT: "75000"
     expose:
       - "3000"
 

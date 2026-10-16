@@ -1,4 +1,5 @@
 import { connection } from "next/server";
+import { HEARTBEAT_INTERVAL } from "../../../_lib/config.ts";
 import {
   type GameState,
   getGameState,
@@ -8,6 +9,7 @@ import {
 const encoder = new TextEncoder();
 const toEvent = (state: GameState) =>
   encoder.encode(`data: ${JSON.stringify(state)}\n\n`);
+const heartbeat = encoder.encode("event: ping\ndata: ping\n\n");
 
 export async function GET(
   request: Request,
@@ -20,17 +22,28 @@ export async function GET(
     return new Response(null, { status: 404 });
   }
 
-  let unsubscribe = () => {};
+  let stop = () => {};
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       controller.enqueue(toEvent(initial));
-      unsubscribe = subscribe(id, (state) =>
+      const unsubscribe = subscribe(id, (state) =>
         controller.enqueue(toEvent(state)),
       );
-      request.signal.addEventListener("abort", () => unsubscribe());
+      const timer = setInterval(() => {
+        try {
+          controller.enqueue(heartbeat);
+        } catch {
+          stop();
+        }
+      }, HEARTBEAT_INTERVAL);
+      stop = () => {
+        clearInterval(timer);
+        unsubscribe();
+      };
+      request.signal.addEventListener("abort", () => stop());
     },
     cancel() {
-      unsubscribe();
+      stop();
     },
   });
 

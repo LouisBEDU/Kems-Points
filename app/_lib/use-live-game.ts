@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useState } from "react";
 import type { Claim } from "./claims.ts";
+import { HEARTBEAT_INTERVAL } from "./config.ts";
 import type { GameState } from "./games.ts";
+
+const STALL_TIMEOUT = HEARTBEAT_INTERVAL * 3;
+const RETRY_DELAY = 1000;
+const MAX_RETRY_DELAY = 30 * 1000;
 
 type LiveState = {
   game: GameState | null;
@@ -21,8 +26,13 @@ export function useLiveGame(gameId: string): LiveGame {
   });
 
   useEffect(() => {
-    const source = new EventSource(`/api/games/${gameId}`);
-    source.onmessage = (event) => {
+    let source: EventSource | null = null;
+    let stallTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryTimer: ReturnType<typeof setTimeout> | undefined;
+    let retryDelay = RETRY_DELAY;
+
+    function receive(event: MessageEvent<string>) {
+      watch();
       const game: GameState = JSON.parse(event.data);
       setState((previous) => {
         const { claim } = game;
@@ -39,8 +49,56 @@ export function useLiveGame(gameId: string): LiveGame {
           claimView: followsClaim ? claim : previous.claimView,
         };
       });
+    }
+
+    function watch() {
+      clearTimeout(stallTimer);
+      stallTimer = setTimeout(reconnect, STALL_TIMEOUT);
+    }
+
+    function disconnect() {
+      clearTimeout(stallTimer);
+      clearTimeout(retryTimer);
+      source?.close();
+      source = null;
+    }
+
+    function connect() {
+      disconnect();
+      const current = new EventSource(`/api/games/${gameId}`);
+      current.onopen = () => {
+        retryDelay = RETRY_DELAY;
+      };
+      current.onmessage = receive;
+      current.addEventListener("ping", watch);
+      current.onerror = () => {
+        if (current.readyState === EventSource.CLOSED) reconnect();
+      };
+      source = current;
+      watch();
+    }
+
+    function reconnect() {
+      disconnect();
+      retryTimer = setTimeout(connect, retryDelay);
+      retryDelay = Math.min(retryDelay * 2, MAX_RETRY_DELAY);
+    }
+
+    function onVisibilityChange() {
+      if (document.hidden) {
+        disconnect();
+      } else if (!source) {
+        retryDelay = RETRY_DELAY;
+        connect();
+      }
+    }
+
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    if (!document.hidden) connect();
+    return () => {
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+      disconnect();
     };
-    return () => source.close();
   }, [gameId]);
 
   const endReveal = useCallback(

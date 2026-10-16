@@ -1,7 +1,7 @@
 {$SITE_ADDRESS} {
 	reverse_proxy app:3000 {
 		transport http {
-			keepalive 4s
+			keepalive 60s
 		}
 	}
 }

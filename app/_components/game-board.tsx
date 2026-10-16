@@ -3,6 +3,8 @@
 import { correctScore, declareKems, resolveKems } from "../_lib/actions.ts";
 import { APP_NAME, TEAMS } from "../_lib/config.ts";
 import { teamNames } from "../_lib/teams.ts";
+import { useGuardedAction } from "../_lib/use-guarded-action.ts";
+import { ActionError } from "./action-error.tsx";
 import { ClaimStage } from "./claim-stage.tsx";
 import { EndGameButton } from "./end-game-button.tsx";
 import { FinalScore } from "./final-score.tsx";
@@ -27,6 +29,7 @@ export function GameBoard({
   editable?: boolean;
 }) {
   const { gameId, game, revealing, claimView, endClaim } = useGame();
+  const scoring = useGuardedAction();
   const names = teamNames(game?.players ?? []);
 
   if (game && claimView) {
@@ -69,6 +72,7 @@ export function GameBoard({
         </div>
         {editable && phase === "setup" && <TeamSetup />}
         {editable && playing && <EndGameButton gameId={gameId} />}
+        {editable && <ActionError message={scoring.error} />}
         {!editable && qrUrl && preparing && (
           <ManageQrCode
             url={qrUrl}
@@ -95,10 +99,14 @@ export function GameBoard({
             team={names[i]}
             score={game.scores[i]}
             onClaim={
-              editable ? (kind) => declareKems(gameId, i, kind) : undefined
+              editable
+                ? (kind) => scoring.run(() => declareKems(gameId, i, kind))
+                : undefined
             }
             onAdjust={
-              editable ? (delta) => correctScore(gameId, i, delta) : undefined
+              editable
+                ? (delta) => scoring.run(() => correctScore(gameId, i, delta))
+                : undefined
             }
             className={`animate-fade-in ${PLACEMENTS[i]}`}
           />
